@@ -1,0 +1,207 @@
+---
+title: "Aprendizaje automático con conjunto de datos Titanic"
+author: "Juan Gómez Romero"
+output:
+  html_document:
+      code_folding: "show"
+      toc: true
+      toc_depth: 2
+      toc_float: true
+      df_print: paged
+---
+
+Aprendizaje automático con el dataset [titanic](https://www.kaggle.com/c/titanic/).
+
+> El hundimiento del Titanic es una de las tragedias marítimas más conocidas de la historia. El 15 de abril de 1912, durante su viaje inaugural, el Titanic se hundió después de chocar contra un iceberg. En el accidente murieron 1502 personas de las 2224 que habían embarcado, incluyendo pasajeros y tripulación. Una de las razones por las que no se encontraron más supervivientes fue la falta de espacio en los barcos salvavidas. Así, aunque la suerte sin duda sonrió a los supervivientes, también resultaron más favorecidos algunos grupos de personas, como las mujeres, los niños y los pasajeros de la clase superior
+
+# Análisis exploratorio
+
+```{r cargar-datos}
+library(tidyverse)
+data_raw <- read_csv('data/titanic.csv')
+data_raw 
+```
+
+
+```{r visualizar-variables-1}
+library(ggthemes)
+library(scales)
+
+plotdata <- 
+  data_raw %>%
+  mutate(Survived = as.factor(Survived))
+
+ggplot(plotdata) +
+  geom_bar(aes(x = Sex)) +
+  labs(title = "Titanic passengers", x = "Sex", y = "# Passengers") +
+  theme_hc()
+
+ggplot(plotdata) +
+  geom_histogram(aes(x = Age), binwidth = 1) +
+  labs(title = "Titanic passengers", x = "Age", y = "# Passengers") +
+  theme_hc()
+```
+
+
+```{r visualizar-variables-2}
+ggplot(plotdata) +
+  geom_histogram(aes(x = Age, fill = as.factor(Pclass)), binwidth = 1) +
+  labs(title = "Titanic survivors", x = "Age", y = "# Passengers", fill = "Pclass") +
+  theme_hc() + scale_fill_hc()
+
+ggplot(plotdata) +
+  geom_histogram(aes(x = Age, fill = Survived), binwidth = 1) +
+  labs(title = "Titanic survivors", x = "Age", y = "# Passengers", fill = "Survived") +
+  theme_hc() + scale_fill_hc(labels = c('Yes', 'No'))
+
+ggplot(plotdata) +
+  geom_bar(aes(x = Sex, fill = Survived)) +
+  labs(title = "Titanic survivors", x = "Sex", y = "# Passengers", fill = "Survived") +
+  theme_hc() + scale_fill_hc(labels = c('Yes', 'No'))
+```
+
+# Aprendizaje no supervisado
+
+## Reglas de asociación
+```{r obtener-transaccional}
+library(arules) 
+library(arulesViz)
+
+rulesdata <- 
+  data_raw %>%
+  select(Age, Sex, Survived, Pclass) %>%
+  mutate(Survived = ifelse(Survived == 0, "no", "yes")) %>%
+  mutate(Pclass = case_when(
+    Pclass == 1 ~ '1st',
+    Pclass == 2 ~ '2nd',
+    Pclass == 3 ~ '3rd')
+  ) %>%
+  mutate(Age = case_when(
+    Age >= 18 ~ 'adult',
+    TRUE ~ 'child')
+  ) %>%
+  na.omit() %>%
+  mutate_all(as.factor)
+
+datost <- as(rulesdata, "transactions")
+itemFrequencyPlot(datost, type="relative", main="Recuento de ítems")
+```
+
+```{r generar-reglas}
+minSup  <- 0.01
+minConf <- 0.70
+
+reglas <- apriori(datost, 
+                  parameter = list(support = minSup, 
+                                   confidence = minConf, 
+                                   target = "rules", 
+                                   minlen = 2))
+summary(reglas)
+```
+
+```{r visualizar-reglas}
+plot(head(reglas, n=20, by="support"), method = "graph")
+```
+
+## Agrupamiento
+```{r observar-clusters}
+clusterdata <- 
+  data_raw %>%
+  mutate(Sex = as.numeric(as.factor(Sex))) %>%
+  select(Age, Sex, Survived, Pclass, Fare) %>%
+  na.omit()
+
+ggplot(data = filter(clusterdata, Fare < 100)) +
+  geom_point(aes(x = Age, y = Fare, color = as.factor(Survived))) +
+  labs(x = "Age", y = "Fare") +
+  theme_hc() + scale_color_hc(name = 'Survived', labels = c('No', 'Yes'))
+```
+
+
+```{r aplicar-clustering}
+clustering <- kmeans(clusterdata, centers = 3, algorithm = "Lloyd", iter.max = 100)
+
+str(clustering)
+```
+```{r visualizar-clustering}
+library(factoextra)
+fviz_cluster(clustering, data = clusterdata)
+```
+
+# Aprendizaje supervisado
+
+## Preparación de datos
+```{r seleccion-datos}
+classificationdata <-
+  data_raw %>%
+  mutate(Survived = as.factor(ifelse(Survived == 1, 'Yes', 'No'))) %>%
+  mutate(Pclass = as.factor(Pclass)) %>%
+  mutate(Fare_Interval = as.factor(
+    case_when(
+      Fare >= 30 ~ 'More.than.30',
+      Fare >= 20 & Fare < 30 ~ 'Between.20.30',
+      Fare < 20 & Fare >= 10 ~ 'Between.10.20',
+      Fare < 10 ~ 'Less.than.10'))) %>%
+  select(Survived, Pclass, Sex, Fare_Interval) %>%
+  na.omit()
+```
+
+```{r particion-datos}
+library(caret)
+trainIndex <- createDataPartition(classificationdata$Survived, p = .7, list = FALSE)
+train <- classificationdata[trainIndex, ] 
+val   <- classificationdata[-trainIndex, ]
+```
+
+## Árboles de decisión
+```{r rpart-entrenamiento}
+rpartCtrl <- trainControl(classProbs = TRUE)
+rpartParametersGrid <- expand.grid(.cp = c(0.01, 0.05))
+
+rpartModel <- train(Survived ~ ., 
+                    data = train, 
+                    method = "rpart", 
+                    metric = "Accuracy", 
+                    trControl = rpartCtrl, 
+                    tuneGrid = rpartParametersGrid)
+```
+
+```{r rpart-visualizacion}
+library(rpart.plot)
+rpart.plot(rpartModel$finalModel)
+```
+
+```{r rpart-validacion}
+prediction <- predict(rpartModel, val, type = "raw") 
+cm_train <- confusionMatrix(prediction, val[["Survived"]])
+cm_train
+
+library(pROC)
+predictionValidationProb <- predict(rpartModel, val, type = "prob")
+auc1 <- roc(val$Survived,                       
+           predictionValidationProb[["Yes"]])   
+roc_validation1 <- plot.roc(auc1, 
+                           ylim=c(0,1), 
+                           type = "S" , 
+                           print.thres = TRUE, 
+                           main=paste('Validation AUC:', round(auc1$auc[[1]], 2)))
+
+```
+
+## Random forest
+```{r rf-entrenamiento}
+rfModel <- train(Survived ~ ., data = train, method = "rf", metric = "Accuracy", trControl = rpartCtrl)
+predictionValidationProb <- predict(rfModel, val, type = "prob")
+auc2 <- roc(val$Survived, predictionValidationProb[["Yes"]], levels = unique(val[["Survived"]]))
+roc_validation2 <- plot.roc(auc2, ylim=c(0,1), type = "S" , print.thres = T, main=paste('Validation AUC:', round(auc3$auc[[1]], 2)))
+```
+
+```{r rf-comparar}
+roc.test(roc_validation1, roc_validation2)
+
+plot.roc(auc1, type = "S", col="#1c61b6")
+lines.roc(auc2, type = "S", col="#008600")
+```
+
+```
+
