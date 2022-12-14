@@ -9,10 +9,10 @@ Materiales:
   - [Aprendizaje profundo](https://drive.google.com/file/d/1wz0e_7YLpbV4n6T2KtMbHnJ-nWIKXM-L/view?usp=sharing)
 
 Contenidos:
-* Aprendizaje no supervisado ([titanic.Rmd](https://github.com/jgromero/intro_ia/blob/main/titanic.Rmd), [wines.Rmd](https://github.com/jgromero/intro_ia/blob/main/wines.Rmd))
+* Aprendizaje no supervisado ([titanic.Rmd](https://github.com/jgromero/intro_ml/blob/ef9d8a72755111d81f12f0e2efb30f803faa24de/code/titanic.Rmd), [wines.Rmd](https://github.com/jgromero/intro_ml/blob/ef9d8a72755111d81f12f0e2efb30f803faa24de/code/wines.Rmd))
   - Reglas de asociación
   - Agrupamiento
-* Aprendizaje supervisado ([titanic.Rmd](https://github.com/jgromero/intro_ia/blob/main/titanic.Rmd), [wines.Rmd](https://github.com/jgromero/intro_ia/blob/main/wines.Rmd))
+* Aprendizaje supervisado ([titanic.Rmd](https://github.com/jgromero/intro_ml/blob/ef9d8a72755111d81f12f0e2efb30f803faa24de/code/titanic.Rmd), [wines.Rmd](https://github.com/jgromero/intro_ml/blob/ef9d8a72755111d81f12f0e2efb30f803faa24de/code/wines.Rmd))
   - Árboles de decisión
   - _Random forest_
   - _Boosting_
