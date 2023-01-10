@@ -4,10 +4,9 @@
 
 Materiales:
 * Diapositivas ([pdf](https://github.com/jgromero/intro_ia/blob/30f9ec5446ce9240d7286d2c3b0844062730ef66/Aprendizaje%20Automa%CC%81tico.pdf))
-<!-- * Grabaciones (usar cuenta @go.ugr.es)
-  - [Aprendizaje automático](#)
-  - [Aprendizaje profundo](#)
--->
+* Grabaciones (usar cuenta @go.ugr.es)
+  - [Aprendizaje automático](https://drive.google.com/file/d/1K9SJZuc-T6uMNJyl6jOF6KWfKuYynjf4/view?usp=sharing)
+  - [Aprendizaje profundo](https://drive.google.com/file/d/1wz0e_7YLpbV4n6T2KtMbHnJ-nWIKXM-L/view?usp=sharing)
 * Código
   - Titanic
     - Aprendizaje supervisado y no supervisado ([R Markdown](https://github.com/jgromero/intro_ml/blob/ef9d8a72755111d81f12f0e2efb30f803faa24de/code/titanic.Rmd))
